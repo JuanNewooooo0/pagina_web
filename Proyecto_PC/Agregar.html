@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agregar</title>
+    <style>
+        :root {
+            --pink: #e91e63;
+            --dark-pink: #4d1258b6;
+            --light-pink: #f8bbd0;
+            --gray: #f5f5f5;
+            --dark-gray: #000000;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--gray);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+        .container {
+            background: white;
+            padding: 50px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            width: 300px;
+            max-height: 80vh; /* Ajusta la altura máxima */
+            overflow-y: auto; /* Activa la barra de desplazamiento vertical */
+        }
+ 
+        input, select, button {
+            margin: 10px 0;
+            padding: 10px;
+            width: 100%;
+            border: 1px solid var(--light-pink);
+            border-radius: 5px;
+        }
+        button {
+            background: var(--dark-pink);
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background: var(--pink);
+        }
+        #adminPanel {
+            display: none;
+        }
+        img {
+            width: 100%;
+            max-height: 150px;
+            margin-top: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        .product-list {
+            width: 100%;
+            margin-top: 20px;
+        }
+        .product-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+        }
+        .product-item button {
+            background: #f44336;
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        .product-item button:hover {
+            background: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="loginPanel">
+        <h2>Ingresar como Administrador</h2>
+        <input type="password" id="password" placeholder="Ingrese la contraseña">
+        <button onclick="verificarPassword()">Entrar</button>
+    </div>
+
+    <div class="container" id="adminPanel">
+        <h2>Agregar Nueva Imagen</h2>
+        <input type="text" id="nombre" placeholder="Nombre de la imagen">
+        <input type="file" id="imagenFile" accept="image/*" onchange="mostrarVistaPrevia(event)">
+        <img id="preview" alt="Vista previa">
+        <select id="categoria">
+            <option value="piñatas">Piñatas</option>
+            <option value="botargas">Show de Botarga</option>
+            <option value="adornos">Adornos</option>
+            <option value="globos">Globos</option>
+        </select>
+        <button onclick="agregarImagen()">Agregar Imagen</button>
+
+        <h3>Lista de Imágenes</h3>
+
+        <!-- Agregamos un select para filtrar imágenes -->
+        <select id="filtroCategoria" onchange="mostrarProductos()">
+            <option value="all">Todos</option>
+            <option value="piñatas">Piñatas</option>
+            <option value="botargas">Show de Botarga</option>
+            <option value="adornos">Adornos</option>
+            <option value="globos">Globos</option>
+            <option value="#">Ninguno</option>
+        </select>
+
+        <div class="product-list" id="productList">
+            <!-- Imágenes almacenadas y opción de eliminar aparecerán aquí -->
+        </div>
+        
+        <a href="index.html">Volver al inicio</a>
+    </div>
+
+    <script>
+        function verificarPassword() {
+            const password = document.getElementById("password").value;
+            if (password === "a") {
+                document.getElementById("loginPanel").style.display = "none";
+                document.getElementById("adminPanel").style.display = "block";
+                mostrarProductos(); // Mostrar imágenes guardadas
+            } else {
+                alert("Contraseña incorrecta");
+            }
+        }
+
+        function mostrarVistaPrevia(event) {
+            const preview = document.getElementById("preview");
+            const file = event.target.files[0];
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = "block";
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function agregarImagen() {
+            const nombre = document.getElementById("nombre").value;
+            const categoria = document.getElementById("categoria").value;
+            const imagenFile = document.getElementById("imagenFile").files[0];
+
+            if (nombre && imagenFile) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const productos = JSON.parse(localStorage.getItem("imagenes")) || [];
+                    productos.push({ nombre, imagen: e.target.result, categoria });
+                    localStorage.setItem("imagenes", JSON.stringify(productos));
+                    alert("Imagen agregada con éxito");
+                    document.getElementById("nombre").value = "";
+                    document.getElementById("imagenFile").value = "";
+                    document.getElementById("preview").style.display = "none";
+                    mostrarProductos(); // Refrescar la lista de productos
+                };
+                reader.readAsDataURL(imagenFile);
+            } else {
+                alert("Por favor, complete todos los campos");
+            }
+        }
+
+        function mostrarProductos() {
+            const productos = JSON.parse(localStorage.getItem("imagenes")) || [];
+            const categoriaFiltro = document.getElementById("filtroCategoria").value;
+            const productList = document.getElementById("productList");
+            productList.innerHTML = "";
+
+            // Filtrar productos por categoría
+            const productosFiltrados = categoriaFiltro === "all" ? productos : productos.filter(producto => producto.categoria === categoriaFiltro);
+
+            productosFiltrados.forEach((producto, index) => {
+                const productItem = document.createElement("div");
+                productItem.classList.add("product-item");
+
+                productItem.innerHTML = `
+                    <img src="${producto.imagen}" alt="${producto.nombre}" width="50">
+                    <span>${producto.nombre}</span>
+                    <button onclick="eliminarImagen(${index})">Eliminar</button>
+                `;
+
+                productList.appendChild(productItem);
+            });
+        }
+
+        function eliminarImagen(index) {
+            const productos = JSON.parse(localStorage.getItem("imagenes")) || [];
+            productos.splice(index, 1);
+            localStorage.setItem("imagenes", JSON.stringify(productos));
+            mostrarProductos(); // Actualizar la lista de productos después de eliminar
+        }
+
+        // Mostrar productos al cargar la página
+        window.onload = function() {
+            mostrarProductos();
+        };
+    </script>
+
+</body>
+</html>
